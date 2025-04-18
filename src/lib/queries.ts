@@ -17,3 +17,19 @@ export const GET_QUESTION_BY_NUMBER = gql`
     }
   }
 `;
+
+export const GET_QUESTIONS_BY_BLOCK = gql`
+  query GetQuestionsByBlock($year: Int!, $block: String!) {
+    questions(
+      where: { year: { _eq: $year }, block: { _eq: $block } }
+      order_by: { number: asc }
+    ) {
+      id
+      question_number
+      text
+      department {
+        name
+      }
+    }
+  }
+`;
