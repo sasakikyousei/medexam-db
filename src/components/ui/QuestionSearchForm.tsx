@@ -18,7 +18,7 @@ export default function QuestionSearchForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 mb-8">
       <input
         type="text"
         placeholder="例: 118A01"

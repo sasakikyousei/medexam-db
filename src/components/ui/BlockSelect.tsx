@@ -14,7 +14,7 @@ const BlockSelect = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold">回数別検索</h2>
+      <h2 className="text-2xl font-bold">回数別検索</h2>
       <div className="flex gap-4 flex-wrap">
         {/* 118回だけ仮で表示 */}
         <button
