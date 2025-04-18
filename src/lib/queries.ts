@@ -14,6 +14,12 @@ export const GET_QUESTION_BY_NUMBER = gql`
       correct_answers
       explanation
       department_id
+      department {
+        name
+      }
+      question_images {
+        image_url
+      }
     }
   }
 `;

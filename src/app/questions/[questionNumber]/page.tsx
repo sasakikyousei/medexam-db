@@ -1,6 +1,8 @@
 import { client } from '@/lib/graphql';
 import { GET_QUESTION_BY_NUMBER } from '@/lib/queries';
+import Image from 'next/image';
 import Link from 'next/link'; // ← トップに戻るリンク用
+
 
 type Props = {
   params: { questionNumber: string };
@@ -26,7 +28,26 @@ export default async function QuestionPage(props: Props) {
         問題番号: {question.question_number}
       </h1>
 
-      <p className="whitespace-pre-line">{question.text}</p>
+      <p className="whitespace-pre-line mb-10">{question.text}</p>
+      {question.question_images && question.question_images.length > 0 && (
+        <div className="space-y-4">
+          {question.question_images.map(
+            (img: { image_url: string }, index: number) => (
+              <div
+                key={index}
+                className="relative w-full max-w-[600px] aspect-[4/3]"
+              >
+                <Image
+                  src={img.image_url}
+                  alt={`問題画像 ${index + 1}`}
+                  fill
+                  className="object-contain rounded border"
+                />
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {question.explanation && (
         <div>
