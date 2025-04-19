@@ -7,6 +7,8 @@ export const UPDATE_QUESTION = gql`
       _set: { text: $text, explanation: $explanation }
     ) {
       id
+      text
+      explanation
     }
   }
 `;

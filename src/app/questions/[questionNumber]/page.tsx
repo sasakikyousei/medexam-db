@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { useParams } from 'next/navigation';
 
-
 // Supabase 初期化
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,12 +26,8 @@ type Question = {
   text: string;
   explanation: string;
   correct_answers: string[];
-  question_images: QuestionImage[]; // ✅ optionalではなく明示的に配列とする
+  question_images: QuestionImage[];
 };
-
-// type Props = {
-//   params: { questionNumber: string };
-// };
 
 export default function QuestionPage() {
   const params = useParams();
@@ -45,65 +40,60 @@ export default function QuestionPage() {
   const [explanation, setExplanation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchUserAndData = async () => {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const role = userData?.user?.user_metadata?.role;
+        if (role === 'admin') setIsAdmin(true);
 
+        const { data } = await client.query({
+          query: GET_QUESTION_BY_NUMBER,
+          variables: { questionNumber },
+        });
 
-useEffect(() => {
-  const fetchUserAndData = async () => {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const role = userData?.user?.user_metadata?.role;
-      if (role === 'admin') setIsAdmin(true);
-
-      const { data } = await client.query({
-        query: GET_QUESTION_BY_NUMBER,
-        variables: { questionNumber },
-      });
-
-      const q = data.questions[0];
-
-      if (q) {
-        setQuestion(q);
-        setText(q.text);
-        setExplanation(q.explanation);
-      } else {
-        setQuestion(null); // 明示的にnull（なくてもOKだが明確にする）
+        const q = data.questions[0];
+        if (q) {
+          setQuestion(q);
+          setText(q.text);
+          setExplanation(q.explanation);
+        } else {
+          setQuestion(null);
+        }
+      } catch (err) {
+        console.error('データ取得エラー:', err);
+        setQuestion(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('データ取得中にエラー:', err);
-      setQuestion(null); // 念のためエラー時にも null にする
-    } finally {
-      setIsLoading(false); // 成功/失敗どちらでも最後に呼ぶ
-    }
-  };
+    };
 
-  fetchUserAndData();
-}, [questionNumber]);
-
-
-if (isLoading) {
-  return <div className="p-6 text-gray-500">読み込み中...</div>;
-}
-
-if (!question) {
-  return <div className="p-6 text-red-600">問題が見つかりませんでした。</div>;
-}
-
+    fetchUserAndData();
+  }, [questionNumber]);
 
   const handleSave = async () => {
     if (!question) return;
 
-    await client.mutate({
-      mutation: UPDATE_QUESTION,
-      variables: {
-        id: question.id,
-        text,
-        explanation,
-      },
-    });
+    try {
+      await client.mutate({
+        mutation: UPDATE_QUESTION,
+        variables: {
+          id: question.id,
+          text,
+          explanation,
+        },
+      });
 
-    setQuestion({ ...question, text, explanation });
-    setIsEditing(false);
+      setQuestion({ ...question, text, explanation });
+      setIsEditing(false);
+    } catch (err) {
+      console.error('保存エラー:', err);
+    }
   };
+
+  if (isLoading) {
+    return <div className="p-6 text-gray-500">読み込み中...</div>;
+  }
 
   if (!question) {
     return <div className="p-6 text-red-600">問題が見つかりませんでした。</div>;
@@ -122,19 +112,40 @@ if (!question) {
             onChange={(e) => setText(e.target.value)}
             className="w-full border p-2"
             rows={5}
+            placeholder="問題文を入力してください"
           />
           <textarea
             value={explanation}
             onChange={(e) => setExplanation(e.target.value)}
             className="w-full border p-2"
             rows={4}
+            placeholder="解説を入力してください"
           />
-          <button
-            onClick={handleSave}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            保存
-          </button>
+
+          <div className="flex gap-4">
+            <button
+              onClick={handleSave}
+              disabled={!text.trim() || !explanation.trim()}
+              className={`px-4 py-2 rounded text-white ${
+                !text.trim() || !explanation.trim()
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              保存
+            </button>
+
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setText(question.text);
+                setExplanation(question.explanation);
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              キャンセル
+            </button>
+          </div>
         </div>
       ) : (
         <>
