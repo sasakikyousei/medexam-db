@@ -2,9 +2,11 @@ import { client } from '@/lib/graphql';
 import { GET_QUESTIONS_BY_BLOCK } from '@/lib/queries';
 import Link from 'next/link';
 
-type Props = {
-  params: { blockId: string };
-};
+interface Props {
+  params: {
+    blockId: string;
+  };
+}
 
 export default async function QuestionBlockPage({ params }: Props) {
   const blockId = params.blockId;
@@ -25,10 +27,10 @@ export default async function QuestionBlockPage({ params }: Props) {
       </h1>
 
       <div className="overflow-x-auto">
-        <table className="min-w-[600px] border border-gray-300 ">
+        <table className="min-w-[600px] border border-gray-300">
           <thead>
             <tr className="bg-gray-100 text-left">
-              <th className="px-4 py-2 border ">問題番号</th>
+              <th className="px-4 py-2 border">問題番号</th>
               <th className="px-4 py-2 border min-w-[300px]">問題文</th>
               <th className="px-4 py-2 border min-w-[100px]">科目</th>
             </tr>
@@ -41,7 +43,7 @@ export default async function QuestionBlockPage({ params }: Props) {
                 department?: { name?: string };
               }) => (
                 <tr key={q.question_number} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border border-black text-blue-800 font-medium ">
+                  <td className="px-4 py-2 border border-black text-blue-800 font-medium">
                     <Link href={`/questions/${q.question_number}`}>
                       {q.question_number}
                     </Link>

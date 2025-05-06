@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { gql } from '@apollo/client';
 import { client } from '@/lib/graphql';
 import { GET_QUESTION_BY_NUMBER } from '@/lib/queries';
 import { UPDATE_QUESTION } from '@/lib/mutations';
@@ -49,6 +50,15 @@ function getPrevQuestionNumber(current: string): string {
   return `${prefix}${prev}`;
 }
 
+// gql を使ったクエリ定義
+const CHECK_QUESTION_EXISTS = gql`
+  query CheckQuestionExists($questionNumber: String!) {
+    questions(where: { question_number: { _eq: $questionNumber } }) {
+      id
+    }
+  }
+`;
+
 export default function QuestionPage() {
   const params = useParams();
   const router = useRouter();
@@ -60,14 +70,19 @@ export default function QuestionPage() {
   const [text, setText] = useState('');
   const [explanation, setExplanation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [nextExists, setNextExists] = useState(false);
+  const [prevExists, setPrevExists] = useState(false);
 
   useEffect(() => {
-    const fetchUserAndData = async () => {
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
+        // 認証チェック
         const { data: userData } = await supabase.auth.getUser();
         const role = userData?.user?.user_metadata?.role;
         if (role === 'admin') setIsAdmin(true);
 
+        // 現在の問題取得
         const { data } = await client.query({
           query: GET_QUESTION_BY_NUMBER,
           variables: { questionNumber },
@@ -81,15 +96,37 @@ export default function QuestionPage() {
         } else {
           setQuestion(null);
         }
+
+        // 前後問題の存在確認
+        const next = getNextQuestionNumber(questionNumber);
+        const prev = getPrevQuestionNumber(questionNumber);
+
+        const [nextResult, prevResult] = await Promise.all([
+          client.query({
+            query: CHECK_QUESTION_EXISTS,
+            variables: { questionNumber: next },
+          }),
+          client.query({
+            query: CHECK_QUESTION_EXISTS,
+            variables: { questionNumber: prev },
+          }),
+        ]);
+
+        setNextExists(nextResult.data.questions.length > 0);
+        setPrevExists(
+          prev !== questionNumber && prevResult.data.questions.length > 0
+        );
       } catch (err) {
         console.error('データ取得エラー:', err);
         setQuestion(null);
+        setNextExists(false);
+        setPrevExists(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUserAndData();
+    fetchData();
   }, [questionNumber]);
 
   const handleSave = async () => {
@@ -223,7 +260,7 @@ export default function QuestionPage() {
           onClick={() =>
             router.push(`/questions/${getPrevQuestionNumber(questionNumber)}`)
           }
-          disabled={getPrevQuestionNumber(questionNumber) === questionNumber}
+          disabled={!prevExists}
           className="px-4 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           ← 前の問題
@@ -233,7 +270,8 @@ export default function QuestionPage() {
           onClick={() =>
             router.push(`/questions/${getNextQuestionNumber(questionNumber)}`)
           }
-          className="px-4 py-2 rounded text-white bg-purple-600 hover:bg-purple-700"
+          disabled={!nextExists}
+          className="px-4 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           次の問題 →
         </button>
