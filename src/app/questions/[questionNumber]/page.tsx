@@ -7,7 +7,7 @@ import { UPDATE_QUESTION } from '@/lib/mutations';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 // Supabase 初期化
 const supabase = createClient(
@@ -29,8 +29,29 @@ type Question = {
   question_images: QuestionImage[];
 };
 
+// 前後の問題番号を計算
+function getNextQuestionNumber(current: string): string {
+  const match = current.match(/^(\d+[A-Z])(\d{2})$/);
+  if (!match) return current;
+  const prefix = match[1];
+  const number = parseInt(match[2], 10);
+  const next = (number + 1).toString().padStart(2, '0');
+  return `${prefix}${next}`;
+}
+
+function getPrevQuestionNumber(current: string): string {
+  const match = current.match(/^(\d+[A-Z])(\d{2})$/);
+  if (!match) return current;
+  const prefix = match[1];
+  const number = parseInt(match[2], 10);
+  if (number <= 1) return current;
+  const prev = (number - 1).toString().padStart(2, '0');
+  return `${prefix}${prev}`;
+}
+
 export default function QuestionPage() {
   const params = useParams();
+  const router = useRouter();
   const questionNumber = params.questionNumber as string;
 
   const [question, setQuestion] = useState<Question | null>(null);
@@ -196,7 +217,29 @@ export default function QuestionPage() {
         </>
       )}
 
-      <div className="pt-6">
+      {/* 前後の問題ボタン */}
+      <div className="flex gap-4 pt-6">
+        <button
+          onClick={() =>
+            router.push(`/questions/${getPrevQuestionNumber(questionNumber)}`)
+          }
+          disabled={getPrevQuestionNumber(questionNumber) === questionNumber}
+          className="px-4 py-2 rounded text-white bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          ← 前の問題
+        </button>
+
+        <button
+          onClick={() =>
+            router.push(`/questions/${getNextQuestionNumber(questionNumber)}`)
+          }
+          className="px-4 py-2 rounded text-white bg-purple-600 hover:bg-purple-700"
+        >
+          次の問題 →
+        </button>
+      </div>
+
+      <div className="pt-4">
         <Link href="/">
           <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
             トップに戻る
